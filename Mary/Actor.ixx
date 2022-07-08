@@ -12039,7 +12039,7 @@ void SetAction(byte8 * actorBaseAddr)
 			actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = File_staticFiles[pl000_00_3];
 
 
-
+			//Dante Rebellion//
 			if
 			(
 				activeConfig.enableRebellionAirStinger &&
@@ -12054,17 +12054,108 @@ void SetAction(byte8 * actorBaseAddr)
 				actorData.newAirStingerCount++;
 			}
 			else if
-			(
-				activeConfig.enableRebellionNewDrive &&
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == REBELLION_HELM_BREAKER) &&
+					(actorData.newAirStingerCount < activeConfig.Rebellion.airStingerCount[index]) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::DOWN)
+				)
+			{
+				actorData.action = REBELLION_DIVEKICK;
+
+				actorData.newAirStingerCount++;
+			}			
+			else if
+				(
+					activeConfig.enableNevanNewVortex &&
+					(actorData.action == REBELLION_HELM_BREAKER) &&
+					actorData.devil &&
+					(tiltDirection != TILT_DIRECTION::NEUTRAL)
+				)
+			{
+				actorData.action = NEVAN_VORTEX;
+			}
+			else if
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == REBELLION_AERIAL_RAVE_PART_1) &&
+					(actorData.newAirStingerCount < activeConfig.Rebellion.airStingerCount[index]) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::UP)
+				)
+			{
+				actorData.action = REBELLION_AERIAL_RAVE_PART_4;
+
+			}
+			
+			//KICK//
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
 				(actorData.action == REBELLION_COMBO_1_PART_1) &&
 				lockOn &&
-				(tiltDirection == TILT_DIRECTION::LEFT)
+				(tiltDirection == TILT_DIRECTION::RIGHT)
 			)
+			{
+				actorData.action = REBELLION_KICK_2;
+			}
+			else if
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == REBELLION_COMBO_1_PART_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::RIGHT)
+					)
+			{
+				actorData.action = REBELLION_KICK_2;
+			}
+			else if
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == REBELLION_COMBO_1_PART_3) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::RIGHT)
+					)
+			{
+				actorData.action = REBELLION_KICK_2;
+			}
+			
+			//DRIVE//
+			else if
+				(
+					activeConfig.enableRebellionNewDrive &&
+					(actorData.action == REBELLION_COMBO_1_PART_1) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+				)
 			{
 				actorData.action = REBELLION_DRIVE_1;
 			}
 			else if
-			(
+				(
+					activeConfig.enableRebellionNewDrive &&
+					(actorData.action == REBELLION_COMBO_1_PART_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = REBELLION_DRIVE_1;
+			}
+			else if
+				(
+				    activeConfig.enableRebellionNewDrive &&
+					(actorData.action == REBELLION_COMBO_1_PART_3) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = REBELLION_DRIVE_1;
+			}
+			
+			//QDRIVE//
+			else if
+			    (
 				activeConfig.enableRebellionQuickDrive &&
 				(demo_pl000_00_3 != 0) &&
 				(actorData.action == REBELLION_COMBO_1_PART_2) &&
@@ -12078,8 +12169,10 @@ void SetAction(byte8 * actorBaseAddr)
 
 				actorData.newQuickDrive = true;
 			}
+			
+			//Dante Cerberus//
 			else if
-			(
+			    (
 				activeConfig.enableCerberusAirRevolver &&
 				(actorData.action == CERBERUS_SWING) &&
 				lockOn &&
@@ -12088,8 +12181,261 @@ void SetAction(byte8 * actorBaseAddr)
 			{
 				actorData.action = CERBERUS_REVOLVER_LEVEL_2;
 			}
+			//EAUGH//
 			else if
-			(
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_SWING) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = REBELLION_DIVEKICK;
+			}
+			//RIGHT TILT//
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_COMBO_1_PART_1) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = CERBERUS_COMBO_2_PART_3;
+			}
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_COMBO_1_PART_2) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = CERBERUS_COMBO_2_PART_3;
+			}
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_COMBO_1_PART_3) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = CERBERUS_COMBO_2_PART_3;
+			}
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_COMBO_1_PART_4) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = CERBERUS_COMBO_2_PART_3;
+			}
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_COMBO_1_PART_5) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = CERBERUS_COMBO_2_PART_3;
+			}
+			//ender//
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_COMBO_1_PART_1) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+			)
+			{
+				actorData.action = CERBERUS_COMBO_1_PART_5;
+			}
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_COMBO_1_PART_2) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+			)
+			{
+				actorData.action = CERBERUS_COMBO_1_PART_5;
+			}
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_COMBO_1_PART_3) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+			)
+			{
+				actorData.action = CERBERUS_COMBO_1_PART_5;
+			}
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_COMBO_1_PART_4) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+			)
+			{
+				actorData.action = CERBERUS_COMBO_1_PART_5;
+			}			
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_COMBO_2_PART_3) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+			)
+			{
+				actorData.action = CERBERUS_COMBO_1_PART_5;
+			}
+		    //air DT//
+			else if
+			    (
+				activeConfig.enableCerberusAirRevolver &&
+				(actorData.action == CERBERUS_AIR_FLICKER) &&
+				lockOn &&
+				actorData.devil &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = BEOWULF_AIR_VOLCANO;
+			}
+			
+			//AGNI & RUDRA//
+			//LEFT//
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_COMBO_1_PART_1) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+			)
+			{
+				actorData.action = AGNI_RUDRA_COMBO_1_PART_5;
+			}
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_COMBO_1_PART_2) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+			)
+			{
+				actorData.action = AGNI_RUDRA_COMBO_1_PART_5;
+			}
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_COMBO_1_PART_3) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+			)
+			{
+				actorData.action = AGNI_RUDRA_COMBO_1_PART_5;
+			}
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_COMBO_1_PART_4) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+			)
+			{
+				actorData.action = AGNI_RUDRA_COMBO_1_PART_5;
+			}
+			//RIGHT//
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_COMBO_1_PART_1) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = AGNI_RUDRA_COMBO_2_PART_2;
+			}
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_COMBO_1_PART_2) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = AGNI_RUDRA_COMBO_2_PART_2;
+			}
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_COMBO_1_PART_3) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = AGNI_RUDRA_COMBO_2_PART_2;
+			}
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_COMBO_1_PART_4) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = AGNI_RUDRA_COMBO_2_PART_2;
+			}
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_COMBO_1_PART_5) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = AGNI_RUDRA_COMBO_2_PART_2;
+			}
+			//Agni rudra air//
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_SKY_DANCE_PART_1) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = AGNI_RUDRA_SKY_DANCE_PART_3;
+			}
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_AERIAL_CROSS) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = REBELLION_DIVEKICK;
+			}
+			//air dt//
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == AGNI_RUDRA_SKY_DANCE_PART_1) &&
+				actorData.devil &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = EBONY_IVORY_RAIN_STORM;
+			}
+			//Dante Nevan//
+			else if
+			    (
 				activeConfig.enableNevanNewVortex &&
 				(actorData.action == NEVAN_AIR_PLAY) &&
 				actorData.devil &&
@@ -12098,9 +12444,95 @@ void SetAction(byte8 * actorBaseAddr)
 			{
 				actorData.action = NEVAN_VORTEX;
 			}
-
-
-
+		else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == NEVAN_AIR_SLASH_PART_1) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = NEVAN_AIR_SLASH_PART_2;
+			}
+			
+			
+			//Dante Beowulf//
+			//launcher//
+			else if
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(actorData.action == BEOWULF_COMBO_1_PART_1) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = BEOWULF_COMBO_1_PART_3;
+			}
+			else if
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == BEOWULF_COMBO_1_PART_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::RIGHT)
+					)
+			{
+				actorData.action = BEOWULF_COMBO_1_PART_3;
+			}
+			//overhead kick//
+			else if
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == BEOWULF_COMBO_1_PART_1) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = BEOWULF_COMBO_2_PART_4;
+			}
+			else if
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == BEOWULF_COMBO_1_PART_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = BEOWULF_COMBO_2_PART_4;
+			}
+			else if
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == BEOWULF_COMBO_1_PART_3) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = BEOWULF_COMBO_2_PART_4;			
+            }
+						
+			//SPIN//
+			else if
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == BEOWULF_THE_HAMMER) &&
+					actorData.devil &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::DOWN)
+					)
+			{
+				actorData.action = BEOWULF_TORNADO;
+			}
+			
+			
+			
+			//GunSlinger//
+			//shotgun//
+			
+			//artemis//
+		   
+			
+			//NewTrickster?//
+			
 			break;
 		}
 		case CHARACTER::VERGIL:
@@ -12108,7 +12540,7 @@ void SetAction(byte8 * actorBaseAddr)
 			using namespace ACTION_VERGIL;
 
 
-
+			//Vergil Yamato//
 			if
 			(
 				activeConfig.enableYamatoVergilNewJudgementCut &&
@@ -12119,10 +12551,85 @@ void SetAction(byte8 * actorBaseAddr)
 			{
 				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
 			}
+			if
+				(
+					activeConfig.enableYamatoVergilNewJudgementCut &&
+					(actorData.action == YAMATO_COMBO_PART_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
+			}
+			if
+				(
+					activeConfig.enableYamatoVergilNewJudgementCut &&
+					(actorData.action == YAMATO_COMBO_PART_3) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
+			}
+			//Quick Draw//
+			else if
+			(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == YAMATO_COMBO_PART_1) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::RIGHT)
+					)
+			{
+				actorData.action = YAMATO_COMBO_PART_3;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == YAMATO_COMBO_PART_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::RIGHT)
+					)
+			{
+				actorData.action = YAMATO_COMBO_PART_3;
+			}
+			//launcher & air quickdraw//
+			
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == YAMATO_UPPER_SLASH_PART_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::DOWN)
+					)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME_LAUNCH;
+			}
+			
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == YAMATO_AERIAL_RAVE_PART_1) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::UP)
+					)
+			{
+				actorData.action = YAMATO_AERIAL_RAVE_PART_2;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == YAMATO_AERIAL_RAVE_PART_1) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::DOWN)
+					)
+			{
+				actorData.action = NERO_ANGELO_DIVEKICK;
+			}
 			// else if (actorData.action == BEOWULF_RISING_SUN)
 			// {
 			// 	actorData.newAirRisingSunCount = 1;
 			// }
+			//Vergil Beowulf//
 			else if
 			(
 				activeConfig.enableBeowulfVergilAirRisingSun &&
@@ -12147,6 +12654,123 @@ void SetAction(byte8 * actorBaseAddr)
 				actorData.action = BEOWULF_LUNAR_PHASE_LEVEL_2;
 			}
 			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_STARFALL_LEVEL_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = NERO_ANGELO_DIVEKICK;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_STARFALL_LEVEL_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::RIGHT)
+					)
+			{
+				actorData.action = NERO_ANGELO_DIVEKICK;
+			}
+			//Fire Ball//
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_COMBO_PART_1) &&
+					lockOn &&
+					actorData.devil &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action =	NERO_ANGELO_FIREBALL_1;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_COMBO_PART_2) &&
+					lockOn &&
+					actorData.devil &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action =	NERO_ANGELO_FIREBALL_1;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_COMBO_PART_3) &&
+					lockOn &&
+					actorData.devil &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action =	NERO_ANGELO_FIREBALL_1;
+			}
+			//Kick//
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_COMBO_PART_1) &&
+					lockOn &&				
+				    (tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_3;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_COMBO_PART_2) &&
+					lockOn &&				
+				    (tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_3;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_COMBO_PART_3) &&
+					lockOn &&				
+				    (tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_3;
+			}
+			//KICK 13//
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_COMBO_PART_1) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::RIGHT)
+					)
+			{
+				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_COMBO_PART_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::RIGHT)
+					)
+			{
+				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeAirStinger &&
+					(actorData.action == BEOWULF_COMBO_PART_3) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::RIGHT)
+					)
+			{
+				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
+			}
+			//Vergil ForceEdge//
+			else if
 			(
 				activeConfig.enableYamatoForceEdgeNewComboPart4 &&
 				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
@@ -12156,6 +12780,26 @@ void SetAction(byte8 * actorBaseAddr)
 			{
 				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
 			}
+			else if
+			(
+				activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_2) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
+			}
+			else if
+			(
+				activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_3) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
+			}			
 			else if
 			(
 				activeConfig.enableYamatoForceEdgeAirStinger &&
@@ -12171,6 +12815,17 @@ void SetAction(byte8 * actorBaseAddr)
 			}
 			else if
 			(
+			    activeConfig.enableYamatoForceEdgeAirStinger &&
+			    (actorData.action == YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_2) &&			
+			    lockOn &&
+			    (tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+			actorData.action = NERO_ANGELO_DIVEKICK;
+			}
+			//ROUND TRIP//
+			else if
+			(
 				activeConfig.enableYamatoForceEdgeNewRoundTrip &&
 				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
 				lockOn &&
@@ -12179,7 +12834,38 @@ void SetAction(byte8 * actorBaseAddr)
 			{
 				actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
 			}
-
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeNewRoundTrip &&
+					(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeNewRoundTrip &&
+					(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_3) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
+			}
+			else if
+				(
+					activeConfig.enableYamatoForceEdgeNewRoundTrip &&
+					(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_4) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::LEFT)
+					)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
+			}
+			//SummonedSword//
+			
 
 
 			break;
