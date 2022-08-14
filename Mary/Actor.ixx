@@ -752,6 +752,7 @@ uint8 GetNextMeleeAction
 
 	auto inAir = (activeActorData.state & STATE::IN_AIR);
 
+	auto onFloor = (activeActorData.state & STATE::ON_FLOOR);
 
 	auto lockOn = (gamepad.buttons[0] & GetBinding(BINDING::LOCK_ON));
 
@@ -1322,7 +1323,7 @@ uint8 GetNextStyleAction
 						if (tiltDirection == TILT_DIRECTION::UP)
 						{
 							action = ARTEMIS_SPHERE;
-						}
+						}						
 					}
 				}
 
@@ -9365,13 +9366,21 @@ void ResetSkyStar(PlayerActorData & actorData)
 			!inAir &&
 			lastInAir
 		) ||
+		// Dante Air Tornado	
+		(
+			(actorData.character == CHARACTER::DANTE) &&
+			(actorData.action == 0) &&
+			(actorData.lastAction == ACTION_DANTE::BEOWULF_TORNADO) &&
+			!inAir &&
+			lastInAir
+		) ||
 		// Vergil Air Rising Sun
 		(
 			(actorData.character == CHARACTER::VERGIL) &&
 			(actorData.action == ACTION_VERGIL::BEOWULF_RISING_SUN) &&
 			inAir &&
 			lastInAir
-		) ||
+			) ||
 		// Vergil Air Stinger
 		(
 			(actorData.character == CHARACTER::VERGIL) &&
@@ -9398,12 +9407,12 @@ void ResetSkyStar(PlayerActorData & actorData)
 	actorData.newAirStingerCount = 0;
 
 	if
-	(
-		(actorData.character == CHARACTER::VERGIL) &&
-		(actorData.action == ACTION_VERGIL::BEOWULF_RISING_SUN) &&
-		inAir &&
-		!lastInAir
-	)
+		(
+			(actorData.character == CHARACTER::VERGIL) &&
+			(actorData.action == ACTION_VERGIL::BEOWULF_RISING_SUN) &&
+			inAir &&
+			!lastInAir
+			)	 
 	{
 		actorData.newAirRisingSunCount = 1;
 	}
@@ -9414,6 +9423,7 @@ void ResetSkyStar(PlayerActorData & actorData)
 
 
 
+	
 	if (actorData.state & STATE::ON_FLOOR)
 	{
 		switch (actorData.character)
@@ -9461,7 +9471,7 @@ void ResetSkyStar(PlayerActorData & actorData)
 		}
 	}
 }
-
+   
 void ToggleMobility(bool enable)
 {
 	LogFunction(enable);
@@ -12024,8 +12034,23 @@ void SetAction(byte8 * actorBaseAddr)
 
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
+	auto meleeWeapon = actorData.newWeapons[actorData.meleeWeaponIndex];
+	
+	auto rangedWeapon = actorData.newWeapons[actorData.rangedWeaponIndex];
 
+	auto nextaction = actorData.nextActionRequestPolicy;
+	
+	auto weapon = GetMeleeWeapon(actorData);
 
+	bool inAir = (actorData.state & STATE::IN_AIR);
+	bool onFloor = (actorData.state & STATE::ON_FLOOR);
+	bool lastInAir = (actorData.lastState & STATE::IN_AIR);
+
+	DebugLog("action     %u", actorData.action);
+	DebugLog("lastAction %u", actorData.lastAction);
+	DebugLog("inAir      %u", inAir);
+	DebugLog("onFloor    %u", onFloor);
+	DebugLog("lastInAir  %u", lastInAir);
 	DebugLog("%s %llX %u", FUNC_NAME, actorBaseAddr, actorData.action);
 
 
@@ -12057,14 +12082,11 @@ void SetAction(byte8 * actorBaseAddr)
 				(
 					activeConfig.enableRebellionAirStinger &&
 					(actorData.action == REBELLION_HELM_BREAKER) &&
-					(actorData.newAirStingerCount < activeConfig.Rebellion.airStingerCount[index]) &&
 					lockOn &&
 					(tiltDirection == TILT_DIRECTION::DOWN)
-				)
+				 )
 			{
 				actorData.action = REBELLION_DIVEKICK;
-
-				actorData.newAirStingerCount++;
 			}			
 			else if
 				(
@@ -12072,55 +12094,57 @@ void SetAction(byte8 * actorBaseAddr)
 					(actorData.action == REBELLION_HELM_BREAKER) &&
 					actorData.devil &&
 					(tiltDirection != TILT_DIRECTION::NEUTRAL)
-				)
+				    )
 			{
 				actorData.action = NEVAN_VORTEX;
 			}
+			//quick air rave//
 			else if
 				(
 					activeConfig.enableRebellionAirStinger &&
 					(actorData.action == REBELLION_AERIAL_RAVE_PART_1) &&
-					(actorData.newAirStingerCount < activeConfig.Rebellion.airStingerCount[index]) &&
 					lockOn &&
 					(tiltDirection == TILT_DIRECTION::UP)
-				)
+					)
 			{
 				actorData.action = REBELLION_AERIAL_RAVE_PART_4;
 
 			}
-			
+			else if
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == REBELLION_AERIAL_RAVE_PART_2) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::UP)
+					)
+			{
+				actorData.action = REBELLION_AERIAL_RAVE_PART_4;
+
+			}
+			else if
+				(
+					activeConfig.enableRebellionAirStinger &&
+					(actorData.action == REBELLION_AERIAL_RAVE_PART_3) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::UP)
+					)
+			{
+				actorData.action = REBELLION_AERIAL_RAVE_PART_4;
+
+			}			
 			//KICK//
 			else if
 			   (
 				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == REBELLION_COMBO_1_PART_1) &&
+				(weapon == WEAPON::REBELLION) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
 				lockOn &&
+				onFloor &&
 				(tiltDirection == TILT_DIRECTION::RIGHT)
 			)
 			{
 				actorData.action = REBELLION_KICK_2;
-			}
-			else if
-				(
-					activeConfig.enableRebellionAirStinger &&
-					(actorData.action == REBELLION_COMBO_1_PART_2) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::RIGHT)
-					)
-			{
-				actorData.action = REBELLION_KICK_2;
-			}
-			else if
-				(
-					activeConfig.enableRebellionAirStinger &&
-					(actorData.action == REBELLION_COMBO_1_PART_3) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::RIGHT)
-					)
-			{
-				actorData.action = REBELLION_KICK_2;
-			}
-			
+			}		
 			//DRIVE//
 			else if
 				(
@@ -12128,7 +12152,7 @@ void SetAction(byte8 * actorBaseAddr)
 					(actorData.action == REBELLION_COMBO_1_PART_1) &&
 					lockOn &&
 					(tiltDirection == TILT_DIRECTION::LEFT)
-				)
+					)
 			{
 				actorData.action = REBELLION_DRIVE_1;
 			}
@@ -12144,7 +12168,7 @@ void SetAction(byte8 * actorBaseAddr)
 			}
 			else if
 				(
-				    activeConfig.enableRebellionNewDrive &&
+					activeConfig.enableRebellionNewDrive &&
 					(actorData.action == REBELLION_COMBO_1_PART_3) &&
 					lockOn &&
 					(tiltDirection == TILT_DIRECTION::LEFT)
@@ -12152,7 +12176,6 @@ void SetAction(byte8 * actorBaseAddr)
 			{
 				actorData.action = REBELLION_DRIVE_1;
 			}
-			
 			//QDRIVE//
 			else if
 			    (
@@ -12196,104 +12219,30 @@ void SetAction(byte8 * actorBaseAddr)
 			else if
 			    (
 				activeConfig.enableCerberusAirRevolver &&
-				(actorData.action == CERBERUS_COMBO_1_PART_1) &&
+				(weapon == WEAPON::CERBERUS) &&
+				!(actorData.lastAction == CERBERUS_COMBO_2_PART_3) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
 				lockOn &&
+				onFloor &&
 				(tiltDirection == TILT_DIRECTION::RIGHT)
 			)
 			{
 				actorData.action = CERBERUS_COMBO_2_PART_3;
-			}
-			else if
-			    (
-				activeConfig.enableCerberusAirRevolver &&
-				(actorData.action == CERBERUS_COMBO_1_PART_2) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::RIGHT)
-			)
-			{
-				actorData.action = CERBERUS_COMBO_2_PART_3;
-			}
-			else if
-			    (
-				activeConfig.enableCerberusAirRevolver &&
-				(actorData.action == CERBERUS_COMBO_1_PART_3) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::RIGHT)
-			)
-			{
-				actorData.action = CERBERUS_COMBO_2_PART_3;
-			}
-			else if
-			    (
-				activeConfig.enableCerberusAirRevolver &&
-				(actorData.action == CERBERUS_COMBO_1_PART_4) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::RIGHT)
-			)
-			{
-				actorData.action = CERBERUS_COMBO_2_PART_3;
-			}
-			else if
-			    (
-				activeConfig.enableCerberusAirRevolver &&
-				(actorData.action == CERBERUS_COMBO_1_PART_5) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::RIGHT)
-			)
-			{
-				actorData.action = CERBERUS_COMBO_2_PART_3;
-			}
+			}			
 			//ender//
 			else if
 			    (
 				activeConfig.enableCerberusAirRevolver &&
-				(actorData.action == CERBERUS_COMBO_1_PART_1) &&
+				(weapon == WEAPON::CERBERUS) &&
+				!(actorData.lastAction == CERBERUS_COMBO_1_PART_5) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
 				lockOn &&
-				(tiltDirection == TILT_DIRECTION::LEFT)
-			)
-			{
-				actorData.action = CERBERUS_COMBO_1_PART_5;
-			}
-			else if
-			    (
-				activeConfig.enableCerberusAirRevolver &&
-				(actorData.action == CERBERUS_COMBO_1_PART_2) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::LEFT)
-			)
-			{
-				actorData.action = CERBERUS_COMBO_1_PART_5;
-			}
-			else if
-			    (
-				activeConfig.enableCerberusAirRevolver &&
-				(actorData.action == CERBERUS_COMBO_1_PART_3) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::LEFT)
-			)
-			{
-				actorData.action = CERBERUS_COMBO_1_PART_5;
-			}
-			else if
-			    (
-				activeConfig.enableCerberusAirRevolver &&
-				(actorData.action == CERBERUS_COMBO_1_PART_4) &&
-				lockOn &&
+				onFloor &&
 				(tiltDirection == TILT_DIRECTION::LEFT)
 			)
 			{
 				actorData.action = CERBERUS_COMBO_1_PART_5;
 			}			
-			else if
-			    (
-				activeConfig.enableCerberusAirRevolver &&
-				(actorData.action == CERBERUS_COMBO_2_PART_3) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::LEFT)
-			)
-			{
-				actorData.action = CERBERUS_COMBO_1_PART_5;
-			}
 		    //air DT//
 			else if
 			    (
@@ -12312,127 +12261,43 @@ void SetAction(byte8 * actorBaseAddr)
 			else if
 			   (
 				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_COMBO_1_PART_1) &&
+				(weapon == WEAPON::AGNI_RUDRA) &&
+				!(actorData.lastAction == AGNI_RUDRA_COMBO_1_PART_5) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
 				lockOn &&
+				onFloor &&
 				(tiltDirection == TILT_DIRECTION::LEFT)
 			)
 			{
 				actorData.action = AGNI_RUDRA_COMBO_1_PART_5;
-			}
-			else if
-			   (
-				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_COMBO_1_PART_2) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::LEFT)
-			)
-			{
-				actorData.action = AGNI_RUDRA_COMBO_1_PART_5;
-			}
-			else if
-			   (
-				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_COMBO_1_PART_3) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::LEFT)
-			)
-			{
-				actorData.action = AGNI_RUDRA_COMBO_1_PART_5;
-			}
-			else if
-			   (
-				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_COMBO_1_PART_4) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::LEFT)
-			)
-			{
-				actorData.action = AGNI_RUDRA_COMBO_1_PART_5;
-			}
+			}			
 			//RIGHT//
 			else if
 			   (
 				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_COMBO_1_PART_1) &&
+				(weapon == WEAPON::AGNI_RUDRA) &&
+				!(actorData.lastAction == AGNI_RUDRA_COMBO_2_PART_2) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
 				lockOn &&
+				onFloor &&
 				(tiltDirection == TILT_DIRECTION::RIGHT)
 			)
 			{
 				actorData.action = AGNI_RUDRA_COMBO_2_PART_2;
-			}
+			}			
+			//air sword master//
 			else if
 			   (
 				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_COMBO_1_PART_2) &&
+				(weapon == WEAPON::AGNI_RUDRA) &&
+				(actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) &&
 				lockOn &&
-				(tiltDirection == TILT_DIRECTION::RIGHT)
-			)
-			{
-				actorData.action = AGNI_RUDRA_COMBO_2_PART_2;
-			}
-			else if
-			   (
-				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_COMBO_1_PART_3) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::RIGHT)
-			)
-			{
-				actorData.action = AGNI_RUDRA_COMBO_2_PART_2;
-			}
-			else if
-			   (
-				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_COMBO_1_PART_4) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::RIGHT)
-			)
-			{
-				actorData.action = AGNI_RUDRA_COMBO_2_PART_2;
-			}
-			else if
-			   (
-				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_COMBO_1_PART_5) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::RIGHT)
-			)
-			{
-				actorData.action = AGNI_RUDRA_COMBO_2_PART_2;
-			}
-			//Agni rudra air//
-			else if
-			   (
-				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_SKY_DANCE_PART_1) &&
-				lockOn &&
+				inAir &&
 				(tiltDirection == TILT_DIRECTION::UP)
 			)
 			{
 				actorData.action = AGNI_RUDRA_SKY_DANCE_PART_3;
-			}
-			else if
-			   (
-				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_AERIAL_CROSS) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::DOWN)
-			)
-			{
-				actorData.action = REBELLION_DIVEKICK;
-			}
-			//air dt//
-			else if
-			   (
-				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == AGNI_RUDRA_SKY_DANCE_PART_1) &&
-				actorData.devil &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::DOWN)
-			)
-			{
-				actorData.action = EBONY_IVORY_RAIN_STORM;
-			}
+			}				
 			//Dante Nevan//
 			else if
 			    (
@@ -12453,149 +12318,127 @@ void SetAction(byte8 * actorBaseAddr)
 			)
 			{
 				actorData.action = NEVAN_AIR_SLASH_PART_2;
-			}
-			
-			
+			}					
 			//Dante Beowulf//
 			//launcher//
 			else if
 			   (
 				activeConfig.enableRebellionAirStinger &&
-				(actorData.action == BEOWULF_COMBO_1_PART_1) &&
+				(weapon == WEAPON::BEOWULF_DANTE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				!(actorData.lastAction == BEOWULF_COMBO_1_PART_3) &&
 				lockOn &&
+				onFloor &&
 				(tiltDirection == TILT_DIRECTION::RIGHT)
 			)
 			{
 				actorData.action = BEOWULF_COMBO_1_PART_3;
-			}
-			else if
-				(
-					activeConfig.enableRebellionAirStinger &&
-					(actorData.action == BEOWULF_COMBO_1_PART_2) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::RIGHT)
-					)
-			{
-				actorData.action = BEOWULF_COMBO_1_PART_3;
-			}
+			}			
 			//overhead kick//
 			else if
-				(
-					activeConfig.enableRebellionAirStinger &&
-					(actorData.action == BEOWULF_COMBO_1_PART_1) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::LEFT)
-					)
+			   (
+				activeConfig.enableRebellionAirStinger &&
+				(weapon == WEAPON::BEOWULF_DANTE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				!(actorData.lastAction == BEOWULF_COMBO_2_PART_4) &&
+				lockOn &&
+				onFloor &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+				)
 			{
 				actorData.action = BEOWULF_COMBO_2_PART_4;
 			}
-			else if
-				(
-					activeConfig.enableRebellionAirStinger &&
-					(actorData.action == BEOWULF_COMBO_1_PART_2) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::LEFT)
-					)
-			{
-				actorData.action = BEOWULF_COMBO_2_PART_4;
-			}
-			else if
-				(
-					activeConfig.enableRebellionAirStinger &&
-					(actorData.action == BEOWULF_COMBO_1_PART_3) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::LEFT)
-					)
-			{
-				actorData.action = BEOWULF_COMBO_2_PART_4;			
-            }
-						
 			//SPIN//
 			else if
-				(
-					activeConfig.enableRebellionAirStinger &&
-					(actorData.action == BEOWULF_THE_HAMMER) &&
-					actorData.devil &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::DOWN)
-					)
+			   (
+				activeConfig.enableRebellionAirStinger &&				
+				(actorData.action == BEOWULF_THE_HAMMER) &&
+				(actorData.newAirStingerCount < activeConfig.Rebellion.airStingerCount[index]) &&
+				actorData.devil &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+				)
 			{
 				actorData.action = BEOWULF_TORNADO;
-			}
-			
-			
-			
+
+				actorData.newAirStingerCount++;
+			}							
 			//GunSlinger//
 			//shotgun//
-			
-			//artemis//
-		   
-			
+			else if
+			   (
+			    activeConfig.enableRebellionAirStinger &&
+			    (actorData.action == SHOTGUN_FIREWORKS) &&
+				(actorData.style == STYLE::GUNSLINGER) &&
+				!(actorData.lastAction == SHOTGUN_POINT_BLANK) &&		
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+				)
+	     	{
+				actorData.action = SHOTGUN_POINT_BLANK;
+            }						
+			else if
+			   (
+			    activeConfig.enableRebellionAirStinger &&
+			    (actorData.action == SPIRAL_TRICK_SHOT) &&
+				(actorData.style == STYLE::GUNSLINGER) &&
+				(actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+				)
+	     	{
+			    actorData.action = SPIRAL_SNIPER;		
+            }		
 			//NewTrickster?//
+			//quick leap 
 			
 			break;
 		}
+
 		case CHARACTER::VERGIL:
 		{
 			using namespace ACTION_VERGIL;
 
+			
 
+			
+
+
+
+			//DarkSlayer/Default
 			//Vergil Yamato//
 			if
 			(
 				activeConfig.enableYamatoVergilNewJudgementCut &&
-				(actorData.action == YAMATO_COMBO_PART_1) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
 				lockOn &&
+				onFloor &&
+				!(actorData.lastAction == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
 				(tiltDirection == TILT_DIRECTION::LEFT)
 			)
 			{
 				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
-			}
-			if
-				(
-					activeConfig.enableYamatoVergilNewJudgementCut &&
-					(actorData.action == YAMATO_COMBO_PART_2) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::LEFT)
-					)
-			{
-				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
-			}
-			if
-				(
-					activeConfig.enableYamatoVergilNewJudgementCut &&
-					(actorData.action == YAMATO_COMBO_PART_3) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::LEFT)
-					)
-			{
-				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
-			}
+			}			
 			//Quick Draw//
 			else if
 			(
+				    (actorData.style == STYLE::DARK_SLAYER) &&
 					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == YAMATO_COMBO_PART_1) &&
+					(weapon == WEAPON::YAMATO_VERGIL) &&
+				    (actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				    !(actorData.lastAction == YAMATO_COMBO_PART_3) &&
 					lockOn &&
+                    onFloor &&
 					(tiltDirection == TILT_DIRECTION::RIGHT)
 					)
 			{
 				actorData.action = YAMATO_COMBO_PART_3;
-			}
-			else if
-				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == YAMATO_COMBO_PART_2) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::RIGHT)
-					)
-			{
-				actorData.action = YAMATO_COMBO_PART_3;
-			}
+			}	
 			//launcher & air quickdraw//
 			
 			else if
-				(
+				(					
 					activeConfig.enableYamatoForceEdgeAirStinger &&
 					(actorData.action == YAMATO_UPPER_SLASH_PART_2) &&
 					lockOn &&
@@ -12614,30 +12457,20 @@ void SetAction(byte8 * actorBaseAddr)
 					)
 			{
 				actorData.action = YAMATO_AERIAL_RAVE_PART_2;
-			}
-			else if
-				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == YAMATO_AERIAL_RAVE_PART_1) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::DOWN)
-					)
-			{
-				actorData.action = NERO_ANGELO_DIVEKICK;
-			}
+			}		
 			// else if (actorData.action == BEOWULF_RISING_SUN)
 			// {
 			// 	actorData.newAirRisingSunCount = 1;
 			// }
 			//Vergil Beowulf//
 			else if
-			(
-				activeConfig.enableBeowulfVergilAirRisingSun &&
-				(actorData.action == BEOWULF_STARFALL_LEVEL_2) &&
-				(actorData.newAirRisingSunCount < activeConfig.beowulfVergilAirRisingSunCount[index]) &&
-				lockOn &&
-				(tiltDirection == TILT_DIRECTION::DOWN)
-			)
+				(
+					activeConfig.enableBeowulfVergilAirRisingSun &&
+					(actorData.action == BEOWULF_STARFALL_LEVEL_2) &&
+					(actorData.newAirRisingSunCount < activeConfig.beowulfVergilAirRisingSunCount[index]) &&
+					lockOn &&
+					(tiltDirection == TILT_DIRECTION::DOWN)
+					)
 			{
 				actorData.action = BEOWULF_RISING_SUN;
 
@@ -12653,153 +12486,197 @@ void SetAction(byte8 * actorBaseAddr)
 			{
 				actorData.action = BEOWULF_LUNAR_PHASE_LEVEL_2;
 			}
-			else if
-				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_STARFALL_LEVEL_2) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::LEFT)
-					)
-			{
-				actorData.action = NERO_ANGELO_DIVEKICK;
-			}
-			else if
-				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_STARFALL_LEVEL_2) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::RIGHT)
-					)
-			{
-				actorData.action = NERO_ANGELO_DIVEKICK;
-			}
 			//Fire Ball//
 			else if
 				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_COMBO_PART_1) &&
+					activeConfig.enableYamatoForceEdgeAirStinger &&		
+					(weapon == WEAPON::BEOWULF_VERGIL) &&
+					(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+					!(actorData.lastAction == NERO_ANGELO_FIREBALL_1) &&
 					lockOn &&
+					onFloor &&
 					actorData.devil &&
 					(tiltDirection == TILT_DIRECTION::LEFT)
 					)
 			{
 				actorData.action =	NERO_ANGELO_FIREBALL_1;
-			}
+			}						
 			else if
 				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_COMBO_PART_2) &&
+					activeConfig.enableYamatoForceEdgeAirStinger &&		
+					(weapon == WEAPON::BEOWULF_VERGIL) &&
+					(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+					!(actorData.lastAction == NERO_ANGELO_FIREBALL_2) &&
 					lockOn &&
+					onFloor &&
 					actorData.devil &&
 					(tiltDirection == TILT_DIRECTION::LEFT)
 					)
 			{
 				actorData.action =	NERO_ANGELO_FIREBALL_1;
-			}
-			else if
-				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_COMBO_PART_3) &&
-					lockOn &&
-					actorData.devil &&
-					(tiltDirection == TILT_DIRECTION::LEFT)
-					)
-			{
-				actorData.action =	NERO_ANGELO_FIREBALL_1;
-			}
+			}						
 			//Kick//
 			else if
 				(
 					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_COMBO_PART_1) &&
-					lockOn &&				
+					(weapon == WEAPON::BEOWULF_VERGIL) &&
+					(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+					!(actorData.lastAction == NERO_ANGELO_COMBO_2_PART_3) &&
+					lockOn &&			
+					onFloor &&
 				    (tiltDirection == TILT_DIRECTION::LEFT)
 					)
 			{
 				actorData.action = NERO_ANGELO_COMBO_2_PART_3;
-			}
-			else if
-				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_COMBO_PART_2) &&
-					lockOn &&				
-				    (tiltDirection == TILT_DIRECTION::LEFT)
-					)
-			{
-				actorData.action = NERO_ANGELO_COMBO_2_PART_3;
-			}
-			else if
-				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_COMBO_PART_3) &&
-					lockOn &&				
-				    (tiltDirection == TILT_DIRECTION::LEFT)
-					)
-			{
-				actorData.action = NERO_ANGELO_COMBO_2_PART_3;
-			}
+			}	
 			//KICK 13//
 			else if
 				(
+				    (actorData.style == STYLE::DARK_SLAYER) &&
 					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_COMBO_PART_1) &&
+					(weapon == WEAPON::BEOWULF_VERGIL) &&
+					(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+					!(actorData.lastAction == NERO_ANGELO_ROUNDHOUSE_KICK) &&
 					lockOn &&
+					onFloor &&
 					(tiltDirection == TILT_DIRECTION::RIGHT)
 					)
 			{
 				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
 			}
-			else if
-				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_COMBO_PART_2) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::RIGHT)
-					)
-			{
-				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
-			}
-			else if
-				(
-					activeConfig.enableYamatoForceEdgeAirStinger &&
-					(actorData.action == BEOWULF_COMBO_PART_3) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::RIGHT)
-					)
-			{
-				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
-			}
+		
 			//Vergil ForceEdge//
 			else if
 			(
+			    (actorData.style == STYLE::DARK_SLAYER) &&
 				activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				!(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_4) &&
+				lockOn &&
+				onFloor &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
+			}	
+			//right tilt fix
+			else if
+			(
+			    (actorData.style == STYLE::DARK_SLAYER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
 				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				!(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_3) &&
 				lockOn &&
+				onFloor &&
 				(tiltDirection == TILT_DIRECTION::RIGHT)
 			)
 			{
-				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
-			}
+				actorData.action = NERO_ANGELO_COMBO_1_PART_3;
+			}		
 			else if
 			(
-				activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+			    (actorData.style == STYLE::DARK_SLAYER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				!(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_3) &&
+				lockOn &&
+				onFloor &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_3;
+			}		
+			else if
+			(
+			     (actorData.style == STYLE::DARK_SLAYER) &&
+			     !activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				 activeConfig.enableYamatoForceEdgeAirStinger &&
+				 (weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				 (actorData.action == YAMATO_COMBO_PART_1) &&
+				 lockOn &&
+                 onFloor &&
+				 (tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_COMBO_PART_3;
+			}	
+			else if
+			(
+			    (actorData.style == STYLE::DARK_SLAYER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				!(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_3) &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_2) &&
+				lockOn &&
+				onFloor &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_3;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::DARK_SLAYER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
 				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_2) &&
+				!(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_3) &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_3) &&
 				lockOn &&
+				onFloor &&
 				(tiltDirection == TILT_DIRECTION::RIGHT)
 			)
 			{
-				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
-			}
+				actorData.action = NERO_ANGELO_COMBO_1_PART_3;
+			}		
 			else if
 			(
-				activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+			    (actorData.style == STYLE::DARK_SLAYER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
 				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_3) &&
+				!(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_3) &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_4) &&
 				lockOn &&
+				onFloor &&
 				(tiltDirection == TILT_DIRECTION::RIGHT)
 			)
 			{
-				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
+				actorData.action = NERO_ANGELO_COMBO_1_PART_3;
 			}			
+			else if
+			(
+			    (actorData.style == STYLE::DARK_SLAYER) &&
+				activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				lockOn &&
+				onFloor &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::DARK_SLAYER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				lockOn &&
+				onFloor &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
+			}				
+			//air attack//
 			else if
 			(
 				activeConfig.enableYamatoForceEdgeAirStinger &&
@@ -12821,50 +12698,1232 @@ void SetAction(byte8 * actorBaseAddr)
 			    (tiltDirection == TILT_DIRECTION::DOWN)
 			)
 			{
-			actorData.action = NERO_ANGELO_DIVEKICK;
+			    actorData.action = NERO_ANGELO_HELM_BREAKER;
 			}
-			//ROUND TRIP//
+			///ROUND TRIP//	
 			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				activeConfig.enableYamatoForceEdgeNewRoundTrip &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				actorData.devil &&
+				lockOn &&
+				onFloor &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+				)
+		{
+			actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
+		}
+		else if
 			(
 				activeConfig.enableYamatoForceEdgeNewRoundTrip &&
 				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
 				lockOn &&
 				(tiltDirection == TILT_DIRECTION::LEFT)
+				)
+		{
+			actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
+		}
+		else if
+			(
+				activeConfig.enableYamatoForceEdgeNewRoundTrip &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_2) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+				)
+		{
+			actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
+		}
+		else if
+			(
+				activeConfig.enableYamatoForceEdgeNewRoundTrip &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_3) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+				)
+		{
+			actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
+		}
+		else if
+			 (
+			activeConfig.enableYamatoForceEdgeNewRoundTrip &&
+			(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_4) &&
+			(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+			lockOn &&
+			(tiltDirection == TILT_DIRECTION::LEFT)
+			)
+		{
+			actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
+		}
+		else if
+			 (
+				activeConfig.enableYamatoVergilNewJudgementCut &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				!(actorData.lastAction == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
+				lockOn &&
+				onFloor &&
+				(tiltDirection == TILT_DIRECTION::LEFT)
+				)
+		{
+			actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
+		}
+		
+			//extension fix is checking for combo 1 and last action 
+			//rather than inputand last action like normal extension
+			//this is done because buffering is evil		
+		
+		    //doppelganger 
+		    
+			//YAMATO DOPPEL
+			//TILTS	
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.action == YAMATO_RAPID_SLASH_LEVEL_1) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				!(actorData.lastAction == YAMATO_COMBO_PART_3) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
 			)
 			{
-				actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
+				actorData.action = YAMATO_COMBO_PART_3;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.action == YAMATO_RAPID_SLASH_LEVEL_2) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				!(actorData.lastAction == YAMATO_COMBO_PART_3) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = YAMATO_COMBO_PART_3;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				(actorData.lastAction == NERO_ANGELO_UPPERCUT) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&	
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = NERO_ANGELO_HIGH_TIME_LAUNCH;
+			}						
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.action == YAMATO_UPPER_SLASH_PART_1) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = NERO_ANGELO_UPPERCUT;
+			}					
+			else if
+			(
+				 (actorData.style == STYLE::DOPPELGANGER) &&
+			     activeConfig.enableYamatoForceEdgeAirStinger &&
+			     !activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				 (weapon == WEAPON::YAMATO_VERGIL) &&
+				 (actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				 !(actorData.lastAction == YAMATO_UPPER_SLASH_PART_2) &&
+				 lockOn &&
+                 onFloor &&
+				 (tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_UPPER_SLASH_PART_2;
+			}	
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.action == YAMATO_AERIAL_RAVE_PART_1) &&
+				inAir 			
+			)
+			{
+				actorData.action = NERO_ANGELO_DIVEKICK;
+			}			
+			
+			//EXTENSION FIX
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&			
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.action == YAMATO_COMBO_PART_1) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_3)
+			)
+			{
+				actorData.action = YAMATO_UPPER_SLASH_PART_1;
+			}				
+			
+			//EXTENSION
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&			
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_3)
+			)
+			{
+				actorData.action = YAMATO_UPPER_SLASH_PART_1;
+			}				
+			
+     		//YAMATO DOPPEL STARTER
+			else if
+			(			    
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == YAMATO_COMBO_PART_1)
+				
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_3;
+			}					
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == YAMATO_COMBO_PART_2)
+			)
+			{
+				actorData.action = YAMATO_UPPER_SLASH_PART_1;
+			}			
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				(actorData.action == YAMATO_COMBO_PART_3)
+			)
+			{
+				actorData.action = YAMATO_UPPER_SLASH_PART_2;
+			}			
+			 
+			//BEOWULF DOPPEL
+			//TILTS
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_LUNAR_PHASE_LEVEL_1) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_LUNAR_PHASE_LEVEL_2) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				(actorData.lastAction == NERO_ANGELO_UPPERCUT) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&	
+				actorData.devil &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = BEOWULF_RISING_SUN;
+			}						
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_RISING_SUN) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&					
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = NERO_ANGELO_UPPERCUT;
+			}									
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				!(actorData.lastAction == BEOWULF_COMBO_PART_3) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				activeConfig.enableYamatoForceEdgeAirStinger &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = BEOWULF_COMBO_PART_3;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_STARFALL_LEVEL_2) &&
+				inAir 			
+			)
+			{
+				actorData.action = NERO_ANGELO_DIVEKICK;
+			}			
+			//FORCE EDGE DOPPEL
+			//TILTS
+			//right tilt
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_4) &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				activeConfig.enableYamatoForceEdgeAirStinger &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
+			}			
+			else if
+			(
+			     (actorData.style == STYLE::DOPPELGANGER) && 
+			     !activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				 activeConfig.enableYamatoForceEdgeAirStinger &&
+				 (weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				 (actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				 lockOn &&
+                 onFloor &&
+				 (tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_UPPER_SLASH_PART_2;
+			}	
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				activeConfig.enableYamatoForceEdgeAirStinger &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_4) &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_1) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
+			}			
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				activeConfig.enableYamatoForceEdgeAirStinger &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_4) &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_2) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
+			}			
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				activeConfig.enableYamatoForceEdgeAirStinger &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_4) &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_3) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
+			}			
+			//normal stuff
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_2) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = NERO_ANGELO_STINGER;
+			}			
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = NERO_ANGELO_HIGH_TIME;
+			}			
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				inAir 			
+			)
+			{
+				actorData.action = NERO_ANGELO_HELM_BREAKER;
+			}			
+			//BEOWULF DOPPEL
+			//BASIC ATTACK STRING
+			// 
+			//STARTER
+			else if
+			(			    
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == BEOWULF_COMBO_PART_1) 
+				
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_1;
+			}					
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == BEOWULF_COMBO_PART_2) 		
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_2;
+			}			
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				(actorData.action == BEOWULF_COMBO_PART_3) 
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_3;
+			}			
+				
+			//FORCE_EDGE	DOPPEL
+			//BASIC ATTACK STRING				
+			// EXTENSION fix
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&			
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				onFloor &&					
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_1)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_2;
+			}				
+		
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&			
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				onFloor &&					
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_2)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_3;
+			}				
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&			
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				onFloor &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_1)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_2;
+			}					
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&			
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				onFloor &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_1)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_1;
+			}				
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&			
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				onFloor &&					
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_1)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_2;
+			}				
+			// //EXTENSION FE DOPPEL
+		
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&			
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&					
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_2)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_3;
+			}				
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&			
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_1)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_2;
+			}					
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&			
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_1)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_1;
+			}				
+			//STARTER FE DOPPEL
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_4)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_3;
+			}	
+			else if
+			(
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_3)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_2;
 			}
 			else if
-				(
-					activeConfig.enableYamatoForceEdgeNewRoundTrip &&
-					(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_2) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::LEFT)
-					)
+			(			    
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_2)				
+			)
 			{
-				actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
+				actorData.action = NERO_ANGELO_COMBO_1_PART_2;
+			}		
+			else if
+			(			    
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1)				
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_1;
+			}		
+			else if
+			(			    
+			    (actorData.style == STYLE::DOPPELGANGER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				!(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				!(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_1) &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) 			
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_1;
+			}					
+						
+			//quicksilver
+		 	//YAMATO QUICK
+			
+	        //TILTS YAMATO QUICK
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = YAMATO_UPPER_SLASH_PART_1;
+			}			
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.action == YAMATO_RAPID_SLASH_LEVEL_1) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_3;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.action == YAMATO_RAPID_SLASH_LEVEL_2) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_3;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				activeConfig.enableYamatoForceEdgeAirStinger &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				!(actorData.lastAction == NERO_ANGELO_ROUNDHOUSE_KICK) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				(actorData.lastAction == YAMATO_UPPER_SLASH_PART_1) &&
+				!(actorData.lastAction == YAMATO_COMBO_PART_3) &&
+				onFloor &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 				
+			)
+			{
+				actorData.action = YAMATO_COMBO_PART_3;
+			}			
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.action == YAMATO_AERIAL_RAVE_PART_1) &&
+				inAir 			
+			)
+			{
+				actorData.action = NERO_ANGELO_HELM_BREAKER;
+			}			
+			//EXTENSION FIX YAMATO QUICK
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.action == YAMATO_COMBO_PART_1) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_2)
+			)
+			{
+				actorData.action = YAMATO_UPPER_SLASH_PART_2;
+			}					
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.action == YAMATO_COMBO_PART_1) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_COMBO_PART_1)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_3;
+			}	
+			
+			
+			//EXTENSION YAMATO QUICK
+			
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_2)
+			)
+			{
+				actorData.action = YAMATO_UPPER_SLASH_PART_2;
+			}						
+		    //STARTER YAMATO QUICK
+			else if
+			(			    
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_VERGIL) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == YAMATO_COMBO_PART_3)			
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_2;
+			}							
+			//BEOWULF
+	        //TILTS 
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_STARFALL_LEVEL_2) &&
+				inAir 
+			)
+			{
+				actorData.action = BEOWULF_STARFALL_LEVEL_1;
+			}	
+		    else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_RISING_SUN) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = BEOWULF_RISING_SUN;
+			}	
+		    else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_LUNAR_PHASE_LEVEL_2) &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = BEOWULF_LUNAR_PHASE_LEVEL_1;
+			}				
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				!(actorData.lastAction == BEOWULF_COMBO_PART_3) &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = BEOWULF_COMBO_PART_3;
+			}				
+		    //EXTENSION FIX BEOWULF
+			//else if
+			//(
+			   // (actorData.style == STYLE::QUICKSILVER) &&		
+				//!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				//(weapon == WEAPON::BEOWULF_VERGIL) &&
+				//(actorData.action == BEOWULF_COMBO_PART_1) &&
+				//onFloor &&
+				//(actorData.lastAction == NERO_ANGELO_ROUNDHOUSE_KICK)
+			//)
+			//{
+				//actorData.action = BEOWULF_COMBO_PART_3;
+			//}		
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_COMBO_PART_1) &&
+				onFloor &&
+				(actorData.lastAction == BEOWULF_COMBO_PART_2)
+			)
+			{
+				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
+			}			
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_COMBO_PART_3) &&
+				onFloor &&
+				(actorData.lastAction == BEOWULF_COMBO_PART_2)
+			)
+			{
+				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
+			}	
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_COMBO_PART_2) &&
+				onFloor &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_2_PART_1)
+			)
+			{
+				actorData.action = BEOWULF_COMBO_PART_2;
+			}				
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_COMBO_PART_1) &&
+				onFloor &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_2_PART_1)
+			)
+			{
+				actorData.action = BEOWULF_COMBO_PART_2;
+			}	
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_COMBO_PART_3) &&
+				onFloor &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_2_PART_2)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_1;
+			}				
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.action == BEOWULF_COMBO_PART_1) &&
+				onFloor &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_2_PART_2)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_1;
+			}				
+            //EXTENSION BEOWULF
+			//else if
+			//(
+			   // (actorData.style == STYLE::QUICKSILVER) &&		
+				//!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				//(weapon == WEAPON::BEOWULF_VERGIL) &&
+				//(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				//onFloor &&
+				//(actorData.lastAction == NERO_ANGELO_ROUNDHOUSE_KICK)
+			//)
+			//{
+			//	actorData.action = BEOWULF_COMBO_PART_3;
+			//}			
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&
+				(actorData.lastAction == BEOWULF_COMBO_PART_2)
+			)
+			{
+				actorData.action = NERO_ANGELO_ROUNDHOUSE_KICK;
+			}				
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_2_PART_1)
+			)
+			{
+				actorData.action = BEOWULF_COMBO_PART_2;
+			}				
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&
+				(actorData.lastAction == NERO_ANGELO_COMBO_2_PART_2)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_1;
+			}				
+            //STARTER BEOWULF
+			else if
+			(			    
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == BEOWULF_COMBO_PART_1) 			
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_2;
+			}					
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == BEOWULF_COMBO_PART_2) 		
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_2_PART_1;
+			}			
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::BEOWULF_VERGIL) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				(actorData.action == BEOWULF_COMBO_PART_3) 
+			)
+			{
+				actorData.action = BEOWULF_COMBO_PART_2;
+			}			
+			// 
+			// 
+			// 
+			//force edge
+			//TILTS		
+		
+			else if
+			(
+				 (actorData.style == STYLE::QUICKSILVER) &&
+			     !activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				 activeConfig.enableYamatoForceEdgeAirStinger &&
+				 (weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				 (actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				 lockOn &&
+                 onFloor &&
+				 (tiltDirection == TILT_DIRECTION::RIGHT)
+			)
+			{
+				actorData.action = YAMATO_COMBO_PART_3;
+			}	
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_1) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = YAMATO_RAPID_SLASH_LEVEL_1;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_2) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::UP)
+			)
+			{
+				actorData.action = YAMATO_RAPID_SLASH_LEVEL_1;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				lockOn &&
+				(tiltDirection == TILT_DIRECTION::DOWN)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
+			}		
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.lastAction == YAMATO_AERIAL_RAVE_PART_1) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				inAir 
+			)
+			{
+				actorData.action = NERO_ANGELO_HELM_BREAKER;
+			}	
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_1) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				inAir 
+			)
+			{
+				actorData.action = YAMATO_AERIAL_RAVE_PART_1;
+			}		
+		else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_2) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				inAir 
+			)
+			{
+				actorData.action = YAMATO_AERIAL_RAVE_PART_1;
+			}		
+	        //EXTENSION FIX		
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&	
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				onFloor &&					
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_1)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
+			}	
+			else if
+			(
+		        (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_2) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_1)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_1;
+			}	
+			else if
+			(
+		        (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_1)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_1;
+			}	
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_3) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_2)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_1;
+			}				
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_2)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_1;
+			}				
+			//EXTENSION
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&	
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&					
+				(actorData.lastAction == NERO_ANGELO_COMBO_1_PART_1)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_4;
+			}				
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&	
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&					
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_1)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_1;
+			}				
+			else if
+			(
+		        (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_1)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_1;
+			}					
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&		
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				(actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+				onFloor &&
+				(actorData.lastAction == YAMATO_FORCE_EDGE_COMBO_PART_2)
+			)
+			{
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_1;
+			}				
+		    //quicksilver
+			//force edge starter				
+			else if
+			(
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&
+				onFloor &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_3)
+			)
+			{
+				actorData.action = NERO_ANGELO_COMBO_1_PART_1;
 			}
 			else if
-				(
-					activeConfig.enableYamatoForceEdgeNewRoundTrip &&
-					(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_3) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::LEFT)
-					)
+			(			    
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_2)				
+			)
 			{
-				actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
-			}
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_1;
+			}		
 			else if
-				(
-					activeConfig.enableYamatoForceEdgeNewRoundTrip &&
-					(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_4) &&
-					lockOn &&
-					(tiltDirection == TILT_DIRECTION::LEFT)
-					)
+			(			    
+			    (actorData.style == STYLE::QUICKSILVER) &&
+				(weapon == WEAPON::YAMATO_FORCE_EDGE) &&
+				!activeConfig.enableYamatoForceEdgeNewComboPart4 &&		
+				onFloor &&
+				(actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1)				
+			)
 			{
-				actorData.action = YAMATO_FORCE_EDGE_ROUND_TRIP;
-			}
+				actorData.action = YAMATO_FORCE_EDGE_COMBO_PART_2;
+			}		
+					
+			//quick leap 
+			
 			//SummonedSword//
+
+			//Nelo Angelo 		
+		
+
+
+
 			
 
 
@@ -12898,8 +13957,16 @@ bool AirActionCheck(PlayerActorData & actorData)
 			)
 			{
 				return true;
+			}		
+			else if
+			(
+			    (actorData.state & STATE::IN_AIR) &&
+				(actorData.action == ACTION_DANTE::BEOWULF_TORNADO) &&
+				(actorData.motionData[1].group == MOTION_GROUP_DANTE::BEOWULF)
+			)
+			{
+				return true;
 			}
-
 			break;
 		}
 		case CHARACTER::VERGIL:
